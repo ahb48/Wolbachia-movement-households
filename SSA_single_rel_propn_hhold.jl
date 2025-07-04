@@ -564,28 +564,31 @@ function get_population_size(states_dict::Dict)
 end
 
 function do_release(states_dict::Dict, params_dict::Dict)
-    """Function to release a number of Wolbachia-infected mosquitoes into each household."""
-    @unpack K, rel_male, rel_fem = params_dict
+    """Function to release a number of Wolbachia-infected mosquitoes into each household. 
+    Number of males and females released is determined by the parameters in params_dict."""
+    @unpack K, rel_male, rel_fem = params_dict  # unpack the parameter values from the dictionary
     rel_size = rel_fem + rel_male  # total number of released mosquitoes
-    keys_list = collect(keys(states_dict))
+    keys_list = collect(keys(states_dict))  # get the keys of the states dictionary
+    # Create a new dictionary to store the updated household states
     states_dict_ = Dict{String, Union{Household_mut, Free_mut, Release_mut, Track_mut}}()
-    states_dict_["free"] = states_dict["free"]
-    states_dict_["release"] = states_dict["release"]
-    states_dict_["track"] = states_dict["track"]
+    states_dict_["free"] = states_dict["free"]  # copy the free state to the new dictionary
+    states_dict_["release"] = states_dict["release"]  # copy the release state to the new dictionary
+    states_dict_["track"] = states_dict["track"]   # copy the track state to the new dictionary
     
-    for key in keys_list
-        if key in ["free", "release", "track"]
+    for key in keys_list   # loop through the keys of the states dictionary
+        if key in ["free", "release", "track"]   # if the key is one of the non-household states, skip it
             continue
         end
-        household = states_dict[key]
+        household = states_dict[key]   # get the household state from the dictionary
 
-        if household.does_rel == 1
+        if household.does_rel == 1   # if the household is a release household
             # If the household is a release household, skip it
-            H_ = household.num
+            H_ = household.num   # number of households in this state
+            # Get the number of mosquitoes of each type in the household
             fem_m, male_m, fem_w, male_w = household.fem_m, household.male_m, household.fem_w, household.male_w
-            m_plus_w = fem_m + male_m + fem_w + male_w
+            m_plus_w = fem_m + male_m + fem_w + male_w  # total number of mosquitoes in the household
         
-            if m_plus_w + rel_size > 2 * K
+            if m_plus_w + rel_size > 2 * K   # if can't fit all released mosquitoes in the household
                 # Calculate the number of mosquitoes to sample
                 num_to_sample = round(Int, max(2 * K - m_plus_w, 0))
                 # Combine the weights of female and male mosquitoes
@@ -598,13 +601,14 @@ function do_release(states_dict::Dict, params_dict::Dict)
                 num_females_sampled = count(x -> x <= rel_fem, sampled_mosquitoes)
                 num_males_sampled = count(x -> x > rel_fem, sampled_mosquitoes)
         
-                fem_w += num_females_sampled
-                male_w += num_males_sampled
-            else
+                fem_w += num_females_sampled  # add the female mosquitoes
+                male_w += num_males_sampled   # add the male mosquitoes
+            else  # if can fit all released mosquitoes in the household
                 fem_w += rel_fem
                 male_w += rel_male
             end
-
+            # Create a new key for the household state, using the make_key_house function
+            # If the household is the tracked household, use the key "track_rel" to track
             key_ = (key == "track_rel") ? "track_rel" : make_key_house(fem_m, male_m, fem_w, male_w, 1)
             event_ws = prop_ind(params_dict, fem_m, male_m, fem_w, male_w)  # event weights for the initial household state
             prop_i = sum(event_ws)   # propensity of an individual household of this type
@@ -615,7 +619,7 @@ function do_release(states_dict::Dict, params_dict::Dict)
             states_dict_[key] = states_dict[key]
         end
     end
-    return states_dict_
+    return states_dict_   # return the updated states dictionary with the new release households
 end
 
 
