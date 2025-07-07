@@ -554,7 +554,7 @@ function do_release(states_dict::Dict, params_dict::Dict)
     for key in keys_list    # loop through the keys of the states dictionary
         if (key != "free") && (key != "release")  # if the key is not the free or release state
             household = states_dict[key]  # get the household state from the dictionary
-            H_ = household.num  # get the number of households in this state
+            H_ = household.num  # get the household state
             # extract the number of mosquitoes of each type in the household
             fem_m, male_m, fem_w, male_w = household.fem_m, household.male_m, household.fem_w, household.male_w
             m_plus_w = fem_m + male_m + fem_w + male_w   # total number of mosquitoes in the household
