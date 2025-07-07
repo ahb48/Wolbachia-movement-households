@@ -544,31 +544,32 @@ end
 
 function do_release(states_dict::Dict, params_dict::Dict)
     """Function to release a number of Wolbachia-infected mosquitoes into each household."""
-    @unpack rel_size, delta_rel, K = params_dict
-    curr_states = length(states_dict)
-    keys_list = collect(keys(states_dict))
+    @unpack rel_size, delta_rel, K = params_dict  # unpack the parameter values from the dictionary
+    keys_list = collect(keys(states_dict))  # get the keys of the states dictionary
+    # create a new dictionary to store the updated household states after release
     states_dict_ = Dict{String, Union{Household_mut, Free_mut, Release_mut, Track_mut}}()
-    states_dict_["free"] = states_dict["free"]
-    states_dict_["release"] = states_dict["release"]
-    rel_half = round(Int, rel_size / 2)
+    states_dict_["free"] = states_dict["free"]  # copy the free state from the original dictionary
+    states_dict_["release"] = states_dict["release"]  # copy the release state from the original dictionary
+    rel_half = round(Int, rel_size / 2)  # half of the release size female, other half male
     
-    for key in keys_list
-        if (key != "free") && (key != "release")
-            household = states_dict[key]
-            H_ = household.num
+    for key in keys_list  # loop through the keys of the states dictionary
+        if (key != "free") && (key != "release")  # if the key is not the free or release state
+            household = states_dict[key]  # get the household state from the dictionary
+            H_ = household.num  # get the household state
+            # get the number of mosquitoes of each type in the household
             fem_m, male_m, fem_w, male_w = household.fem_m, household.male_m, household.fem_w, household.male_w
-            m_plus_w = fem_m + male_m + fem_w + male_w
-            if m_plus_w + rel_size <= 2*K
-                fem_w += rel_half
-                male_w += rel_half
-            else
-                rel_ = round(Int, max(2*K - m_plus_w, 0) / 2)
-                fem_w += rel_
-                male_w += rel_
+            m_plus_w = fem_m + male_m + fem_w + male_w  # total number of mosquitoes in the household
+            if m_plus_w + rel_size <= 2*K  # if the household can accommodate the release size
+                fem_w += rel_half  # add half of the release size to the number of Wolbachia-infected males
+                male_w += rel_half  # add half of the release size to the number of Wolbachia-infected females
+            else  # if the household cannot accommodate the release size
+                rel_ = round(Int, max(2*K - m_plus_w, 0) / 2)  # calculate the number of mosquitoes to release, so that the household is full
+                fem_w += rel_  # add the number of Wolbachia-infected females to the household
+                male_w += rel_  # add the number of Wolbachia-infected males to the household
             end
-            key_ = "track"
-            if key != "track"
-                key_ = make_key_house(fem_m, male_m, fem_w, male_w)
+            key_ = "track"  # initialise the key for the household state
+            if key != "track"  # if the household is not the tracked household
+                key_ = make_key_house(fem_m, male_m, fem_w, male_w)  # make the key for the household state
             end
             event_ws = prop_ind(params_dict, fem_m, male_m, fem_w, male_w)  # event weights for the initial household state
             prop_i = sum(event_ws)   # propensity of an individual household of this type
@@ -576,7 +577,7 @@ function do_release(states_dict::Dict, params_dict::Dict)
             states_dict_[key_] = Household_mut(fem_m, male_m, fem_w, male_w, H_, dist, prop_i, prop_i * H_, Categorical(dist)) 
         end
     end
-    return states_dict_
+    return states_dict_  # return the updated states dictionary
 end
 
 
